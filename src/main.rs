@@ -1,50 +1,15 @@
-#![allow(unused)] // TODO: REMOVE
+mod card;
+mod filter;
 
-use chumsky::prelude::*;
-use serde::Deserialize;
-
-#[derive(Debug)]
-enum SfFilter<'a> {
-    Filter(&'a str),
-}
-
-fn _parse_sf<'a>() /*-> impl Parser<'a, &'a str, SfFilter<'a>> */
-{
-    // the plan so far:
-    // try and parse each space-seperated argument
-    // first check if it's a non-title based filter,
-    // then if it's a nested filter,
-    // and if these fail add it to the title filter
-
-    //let sf_filter = text::ident();
-}
-
-#[derive(Deserialize, Debug)]
-struct ScCard {
-    cmc: f32,
-    game_changer: Option<bool>,
-    id: String,
-    loyalty: Option<String>,
-    mana_cost: Option<String>,
-    name: String,
-    oracle_text: Option<String>,
-    power: Option<String>,
-    rarity: String,
-    reprint: bool,
-    set_name: String,
-    set: String,
-    tougness: Option<String>,
-    type_line: String,
-}
-
-#[derive(Deserialize)]
-struct ScCardPool {
-    pub cards: Vec<ScCard>,
-}
+use card::ScCard;
+use chumsky::Parser;
+use filter::lex_sf;
 
 fn main() {
-    //println!("{:?}", parse_sf().parse("lightning t:instant"));
+    dbg!(lex_sf().parse("input or (pow:1 or enchantment)"));
+}
 
+fn _test_filter() {
     let now = std::time::Instant::now();
 
     let cards: Vec<ScCard> =
@@ -69,6 +34,7 @@ fn main() {
             None => false,
         })
         .filter(|c| &c.name == "Spirited Companion")
+        .filter(|c| c.type_line.contains("Enchantment"))
         .collect();
 
     let elapsed_time = now.elapsed();
