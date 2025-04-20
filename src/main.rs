@@ -6,7 +6,10 @@ use chumsky::Parser;
 use filter::lex_sf;
 
 fn main() {
-    dbg!(lex_sf().parse("input or (pow:1 or enchantment)"));
+    let args = std::env::args().skip(1).collect::<Vec<String>>().join(" ");
+
+    dbg!(&args);
+    dbg!(lex_sf().parse(args.as_str()));
 }
 
 fn _test_filter() {
@@ -28,7 +31,7 @@ fn _test_filter() {
         })
         .filter(|c| match &c.power {
             Some(pow) => match pow.parse::<f32>().ok() {
-                Some(p) => true,
+                Some(_) => true,
                 None => false,
             },
             None => false,
