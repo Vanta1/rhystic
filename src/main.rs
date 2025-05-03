@@ -2,14 +2,15 @@ mod card;
 mod filter;
 
 use card::ScCard;
-use chumsky::Parser;
-use filter::lex_sf;
+use filter::parse_sf;
 
 fn main() {
     let args = std::env::args().skip(1).collect::<Vec<String>>().join(" ");
 
     dbg!(&args);
-    dbg!(lex_sf().parse(args.as_str()));
+
+    #[allow(unused_must_use)]
+    dbg!(parse_sf(args.as_str()));
 }
 
 fn _test_filter() {
