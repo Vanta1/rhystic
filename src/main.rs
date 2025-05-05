@@ -9,8 +9,7 @@ fn main() {
 
     dbg!(&args);
 
-    #[allow(unused_must_use)]
-    dbg!(parse_sf(args.as_str()));
+    dbg!(parse_sf(args.as_str()).expect("parsing failed"));
 }
 
 fn _test_filter() {
