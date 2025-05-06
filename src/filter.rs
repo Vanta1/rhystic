@@ -3,7 +3,7 @@ use chumsky::{
     input::{Stream, ValueInput},
     prelude::*,
 };
-use logos::{Logos, Span};
+use logos::Logos;
 
 /// the parsed expression
 #[derive(Debug)]
@@ -18,14 +18,15 @@ pub enum SfExpr<'a> {
     Title(&'a str),
 }
 
-#[derive(Logos)]
+#[derive(Debug, Logos)]
 enum SfFilter<'a> {
     Error,
-    #[regex("[A-Za-z]+")]
+    // priorities are descending w/ logos
+    #[regex("[A-Za-z]+", priority = 2)]
     Property(&'a str),
-    #[regex("(:|!=|=|>=|>|<=|<)")]
+    #[regex("(:|!=|=|>=|>|<=|<)", priority = 1)]
     Condition(&'a str),
-    #[regex(r#"('[^']*'|"[^"]*"|[A-Za-z0-9{}\/]*)"#)]
+    #[regex(r#"('[^']*'|"[^"]*"|[A-Za-z0-9{}\/]+)"#, priority = 0)]
     Value(&'a str),
 }
 
@@ -38,21 +39,21 @@ fn parse_filter<'a>(src: &'a str) -> SfExpr<'a> {
     let property = match lexer.next() {
         Some(token) => match token {
             (SfFilter::Property(s), _) => s,
-            _ => panic!("lexer failed for filter"),
+            (_, span) => panic!("lexer failed for filter at {:?}", span),
         },
         _ => panic!("lexer failed unexpectedly while parsing filter property"),
     };
     let condition = match lexer.next() {
         Some(token) => match token {
             (SfFilter::Condition(s), _) => s,
-            _ => panic!("lexer failed for filter"),
+            (_, span) => panic!("lexer failed for filter at {:?}", span),
         },
         _ => panic!("lexer failed unexpectedly while parsing filter condition"),
     };
     let value = match lexer.next() {
         Some(token) => match token {
-            (SfFilter::Value(s), _) => s,
-            _ => panic!("lexer failed for filter"),
+            (SfFilter::Value(s) | SfFilter::Property(s), _) => s,
+            (_, span) => panic!("lexer failed for filter at {:?}", span),
         },
         _ => panic!("lexer failed unexpectedly while parsing filter value"),
     };

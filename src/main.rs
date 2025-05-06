@@ -2,17 +2,19 @@ mod card;
 mod filter;
 
 use card::ScCard;
-use filter::parse_sf;
+use filter::{SfExpr, parse_sf};
 
 fn main() {
     let args = std::env::args().skip(1).collect::<Vec<String>>().join(" ");
-
     dbg!(&args);
 
-    dbg!(parse_sf(args.as_str()).expect("parsing failed"));
+    let filter = parse_sf(args.as_str()).expect("parsing failed");
+    dbg!(&filter);
+
+    test_filter(filter);
 }
 
-fn _test_filter() {
+fn test_filter(filter: SfExpr) {
     let now = std::time::Instant::now();
 
     let cards: Vec<ScCard> =
@@ -23,25 +25,22 @@ fn _test_filter() {
 
     let now = std::time::Instant::now();
 
+    let t = match filter {
+        SfExpr::Filter {
+            property: _,
+            condition: _,
+            value,
+        } => value,
+        _ => panic!(""),
+    };
+
     let filtered: Vec<ScCard> = cards
         .into_iter()
-        .filter(|c| match &c.oracle_text {
-            Some(ot) => ot.contains("enters"),
-            None => false,
-        })
-        .filter(|c| match &c.power {
-            Some(pow) => match pow.parse::<f32>().ok() {
-                Some(_) => true,
-                None => false,
-            },
-            None => false,
-        })
-        .filter(|c| &c.name == "Spirited Companion")
-        .filter(|c| c.type_line.contains("Enchantment"))
+        .filter(|c| c.type_line.contains(t))
         .collect();
+
+    dbg!(filtered.first(), filtered.len());
 
     let elapsed_time = now.elapsed();
     println!("filtered in {} ms", elapsed_time.as_millis());
-
-    dbg!(filtered.first(), filtered.len());
 }
