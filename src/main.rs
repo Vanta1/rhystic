@@ -1,7 +1,7 @@
 mod card;
 mod filter;
 
-use std::sync::LazyLock;
+use std::{collections::HashSet, sync::LazyLock};
 
 use card::SfCard;
 use filter::{SfExpr, parse_sf};
@@ -29,11 +29,26 @@ fn main() {
 #[allow(unused)]
 fn test_filter(filter: SfExpr) {
     let t = match filter {
-        SfExpr::Title(value) => value,
+        SfExpr::And(l, r) => match (*l, *r) {
+            (SfExpr::Title(t1), SfExpr::Title(t2)) => (t1, t2),
+            _ => panic!(""),
+        },
         _ => panic!(""),
     };
 
-    let filtered: Vec<&'static SfCard> = CARDS.iter().filter(|c| c.name.eq(t)).collect();
+    let filtered1: Vec<&'static SfCard> = CARDS.iter().filter(|c| c.name.contains(t.0)).collect();
+    let filtered2: Vec<&'static SfCard> = CARDS.iter().filter(|c| c.name.contains(t.1)).collect();
 
-    dbg!(filtered.first(), filtered.len());
+    let hs1: HashSet<&&SfCard<'_>> = HashSet::from_iter(&filtered1);
+    let hs2: HashSet<&&SfCard<'_>> = HashSet::from_iter(&filtered2);
+
+    let intersection: Vec<&&&SfCard<'_>> = hs1.intersection(&hs2).collect();
+
+    dbg!(
+        &filtered1.first(),
+        &filtered1.len(),
+        &filtered2.first(),
+        &filtered2.len(),
+        intersection
+    );
 }
