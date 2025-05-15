@@ -1,46 +1,39 @@
 mod card;
 mod filter;
 
-use card::ScCard;
+use std::sync::LazyLock;
+
+use card::SfCard;
 use filter::{SfExpr, parse_sf};
 
+pub static CARDS: LazyLock<Vec<SfCard<'static>>> = LazyLock::new(|| {
+    serde_json::from_str(include_str!("../res/bulk/oracle-cards-20250417210525.json")).unwrap()
+});
+
 fn main() {
+    let now = std::time::Instant::now();
+    _ = LazyLock::force(&CARDS);
+    println!("deserialized in {} ms", now.elapsed().as_millis());
+
     let args = std::env::args().skip(1).collect::<Vec<String>>().join(" ");
     dbg!(&args);
 
     let filter = parse_sf(args.as_str()).expect("parsing failed");
     dbg!(&filter);
 
+    let now = std::time::Instant::now();
     test_filter(filter);
+    println!("filtered in {} ms", now.elapsed().as_millis());
 }
 
+#[allow(unused)]
 fn test_filter(filter: SfExpr) {
-    let now = std::time::Instant::now();
-
-    let cards: Vec<ScCard> =
-        serde_json::from_str(include_str!("../res/bulk/oracle-cards-20250417210525.json")).unwrap();
-
-    let elapsed_time = now.elapsed();
-    println!("deserialized in {} ms", elapsed_time.as_millis());
-
-    let now = std::time::Instant::now();
-
     let t = match filter {
-        SfExpr::Filter {
-            property: _,
-            condition: _,
-            value,
-        } => value,
+        SfExpr::Title(value) => value,
         _ => panic!(""),
     };
 
-    let filtered: Vec<ScCard> = cards
-        .into_iter()
-        .filter(|c| c.type_line.contains(t))
-        .collect();
+    let filtered: Vec<&'static SfCard> = CARDS.iter().filter(|c| c.name.eq(t)).collect();
 
     dbg!(filtered.first(), filtered.len());
-
-    let elapsed_time = now.elapsed();
-    println!("filtered in {} ms", elapsed_time.as_millis());
 }

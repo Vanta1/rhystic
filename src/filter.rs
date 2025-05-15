@@ -1,3 +1,5 @@
+#![allow(unused)] // TODO: REMOVE
+
 use chumsky::{
     error,
     input::{Stream, ValueInput},
@@ -21,7 +23,7 @@ pub enum SfExpr<'a> {
 #[derive(Debug, Logos)]
 enum SfFilter<'a> {
     Error,
-    // priorities are descending w/ logos
+    // priorities are descending in logos
     #[regex("[A-Za-z]+", priority = 2)]
     Property(&'a str),
     #[regex("(:|!=|=|>=|>|<=|<)", priority = 1)]
@@ -41,21 +43,22 @@ fn parse_filter<'a>(src: &'a str) -> SfExpr<'a> {
             (SfFilter::Property(s), _) => s,
             (_, span) => panic!("lexer failed for filter at {:?}", span),
         },
-        _ => panic!("lexer failed unexpectedly while parsing filter property"),
+        None => panic!("lexer failed: expected property"),
     };
     let condition = match lexer.next() {
         Some(token) => match token {
             (SfFilter::Condition(s), _) => s,
             (_, span) => panic!("lexer failed for filter at {:?}", span),
         },
-        _ => panic!("lexer failed unexpectedly while parsing filter condition"),
+        None => panic!("lexer failed: expected condition"),
     };
     let value = match lexer.next() {
         Some(token) => match token {
+            // the `Property` regex can match possible `Value`s, so both are accepted here.
             (SfFilter::Value(s) | SfFilter::Property(s), _) => s,
             (_, span) => panic!("lexer failed for filter at {:?}", span),
         },
-        _ => panic!("lexer failed unexpectedly while parsing filter value"),
+        None => panic!("lexer failed: expected value"),
     };
 
     SfExpr::Filter {
@@ -68,6 +71,7 @@ fn parse_filter<'a>(src: &'a str) -> SfExpr<'a> {
 // TODO: add negation (-) and exact (!) operators, for name, filter & nest exprs
 #[derive(Debug, Clone, Logos, PartialEq)]
 #[logos(error = String)]
+#[logos(skip r"[ \t\f\n]+")] // skip whitespace
 pub enum SfToken<'a> {
     Error,
     #[token("or", ignore(case))]
@@ -81,8 +85,6 @@ pub enum SfToken<'a> {
     Filter(&'a str),
     #[regex(r#"([A-Za-z0-9'^:]*|"[^"]*")"#)]
     Title(&'a str),
-    #[regex(r"[ \t\f\n]+", logos::skip)]
-    Whitespace,
 }
 
 // idea: parse_sf only parses beginnings of quotes, filters or nests
